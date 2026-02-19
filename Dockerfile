@@ -1,10 +1,9 @@
 FROM node:20-slim
 
-# Install Chromium + all dependencies for Puppeteer
+# Install Chromium dependencies
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-liberation \
-    fonts-noto-color-emoji \
     libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -20,38 +19,31 @@ RUN apt-get update && apt-get install -y \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
-    libxshmfence1 \
     xdg-utils \
-    wget \
-    ca-certificates \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Tell Puppeteer to use the installed Chromium
+# Set Puppeteer to use installed Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-ENV CHROME_BIN=/usr/bin/chromium
-ENV NODE_ENV=production
 
 WORKDIR /app
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package files first (for better caching)
+# Copy package files
 COPY package.json pnpm-lock.yaml* ./
 
-# Install all dependencies
+# Install dependencies
 RUN pnpm install --frozen-lockfile || pnpm install
 
-# Copy rest of the project
+# Copy app source
 COPY . .
 
-# Build the Next.js app
+# Build
 RUN pnpm build
 
-# Expose port
 EXPOSE 3000
 
-# Start the app
 CMD ["pnpm", "start"]
